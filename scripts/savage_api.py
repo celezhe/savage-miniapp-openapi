@@ -57,6 +57,8 @@ class SavageClient:
                 body = json.loads(response.read())
         except HTTPError as exc:
             raw = exc.read().decode("utf-8", "replace")
+            if placement and exc.code >= 500:
+                raise UncertainPlacement(payload["items"][0]["bizItemId"]) from None
             try:
                 message = json.loads(raw).get("msg", raw)
             except json.JSONDecodeError:
@@ -67,8 +69,12 @@ class SavageClient:
                 raise UncertainPlacement(payload["items"][0]["bizItemId"]) from None
             raise ApiError(self._redact(f"Network error: {exc}")) from None
         if not isinstance(body, dict) or "code" not in body:
+            if placement:
+                raise UncertainPlacement(payload["items"][0]["bizItemId"])
             raise ApiError("Malformed API envelope")
         if body["code"] != 200:
+            if placement and int(body["code"]) >= 500:
+                raise UncertainPlacement(payload["items"][0]["bizItemId"])
             raise ApiError(self._redact(f"API {body['code']}: {body.get('msg', 'Unknown error')}"))
         return body.get("data")
 
@@ -119,9 +125,12 @@ class SavageClient:
         return self._post("/order/place", payload, placement=True)
 
     def book_unpaid(self, schedule_id: int, *, approved: bool) -> dict[str, Any]:
+        inventory = self.inventory(schedule_id)
+        if not inventory or inventory[0].get("status") != "NORMAL":
+            raise ApiError("Class inventory is not available")
         orders = self.list_orders("TO_PAY").get("list", [])
-        if any(order.get("scheduleId") == schedule_id for order in orders):
-            raise ApiError("A matching unpaid order already exists")
+        if orders:
+            raise ApiError("An unpaid order already exists; reconcile it before another placement")
         settlement = self.settle(schedule_id)
         return self.place(settlement, schedule_id, approved=approved)
 
@@ -164,10 +173,16 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "settle":
             result = api.settle(args.schedule_id)
         else:
+            inventory_result = api.inventory(args.schedule_id)
+            if not inventory_result or inventory_result[0].get("status") != "NORMAL":
+                raise ApiError("Class inventory is not available")
+            if api.list_orders("TO_PAY").get("list", []):
+                raise ApiError("An unpaid order already exists; reconcile it before another placement")
             preview = api.settle(args.schedule_id)
             print(json.dumps({"scheduleId": args.schedule_id, "settlement": preview}, ensure_ascii=False, indent=2))
             approval = input("Type PLACE UNPAID ORDER to continue: ")
-            result = api.book_unpaid(args.schedule_id, approved=approval == "PLACE UNPAID ORDER")
+            placement = api.place(preview, args.schedule_id, approved=approval == "PLACE UNPAID ORDER")
+            result = {"placement": placement, "toPay": api.list_orders("TO_PAY")}
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0
     except (ApiError, KeyError, OSError, json.JSONDecodeError) as exc:

@@ -27,7 +27,20 @@ def test_list_inventory_settle_and_place_flow(api_server):
     result = api.book_unpaid(12345678, approved=True)
     assert result == {"orderId": "O", "needPrepay": True}
     paths = [request[0] for request in api_server["requests"]]
-    assert paths[-3:] == ["/order/list", "/order/settle/groupClass", "/order/place"]
+    assert paths[-4:] == ["/inventory/status/batch-query", "/order/list", "/order/settle/groupClass", "/order/place"]
+
+
+def test_unavailable_inventory_stops_before_order_calls(api_server):
+    api_server["responses"]["/inventory/status/batch-query"] = envelope({"items": [{"bizItemId": 12345678, "status": "SOLD_OUT"}]})
+    with pytest.raises(ApiError, match="not available"):
+        client(api_server).book_unpaid(12345678, approved=True)
+    assert [item[0] for item in api_server["requests"]] == ["/inventory/status/batch-query"]
+
+
+def test_server_error_after_place_is_uncertain(api_server):
+    api_server["responses"]["/order/place"] = (500, {"code": 500, "msg": "unknown", "data": None})
+    with pytest.raises(UncertainPlacement):
+        client(api_server).place({"settlementId": "S", "settlementVersion": 1, "variantCode": "V", "tempItemId": "T", "assetAllocations": []}, 12345678, approved=True)
 
 
 @pytest.mark.parametrize("code", [400, 401, 411, 412, 429, 500])
@@ -46,13 +59,15 @@ def test_http_error_redacts_token(api_server):
 
 
 def test_existing_unpaid_order_stops_before_settlement(api_server):
+    api_server["responses"]["/inventory/status/batch-query"] = envelope({"items": [{"bizItemId": 12345678, "status": "NORMAL"}]})
     api_server["responses"]["/order/list"] = envelope({"orders": [{"orderId": "OLD", "scheduleId": 12345678}]})
     with pytest.raises(ApiError, match="already exists"):
         client(api_server).book_unpaid(12345678, approved=True)
-    assert [item[0] for item in api_server["requests"]] == ["/order/list"]
+    assert [item[0] for item in api_server["requests"]] == ["/inventory/status/batch-query", "/order/list"]
 
 
 def test_missing_settlement_fields_stops_before_place(api_server):
+    api_server["responses"]["/inventory/status/batch-query"] = envelope({"items": [{"bizItemId": 12345678, "status": "NORMAL"}]})
     api_server["responses"]["/order/list"] = envelope({"orders": []})
     api_server["responses"]["/order/settle/groupClass"] = envelope({"settlementId": "S"})
     with pytest.raises(ApiError, match="missing fields"):
