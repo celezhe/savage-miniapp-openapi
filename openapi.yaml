@@ -1,0 +1,632 @@
+openapi: 3.1.0
+info:
+  title: SAVAGE WeChat Mini Program API
+  version: 0.1.0
+  description: >-
+    Unofficial description of observed SAVAGE Mini Program endpoints. Use only
+    with an account that you own or control. Endpoints can change without notice.
+  license:
+    name: MIT
+    identifier: MIT
+servers:
+  - url: https://wechat-api.savagepark.com.cn/backend-api
+    description: Observed production API
+tags:
+  - name: Authentication
+    description: Exchange a WeChat code for SAVAGE credentials.
+  - name: Discovery
+    description: Get public city and filter information.
+  - name: Classes
+    description: Find and inspect group class schedules.
+  - name: Inventory
+    description: Check current class inventory.
+  - name: Orders
+    description: Preview and create unpaid class orders.
+paths:
+  /auth/wechat/login:
+    post:
+      operationId: loginWithWechatCode
+      summary: Exchange a WeChat login code for a SAVAGE token
+      tags: [Authentication]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WechatLoginRequest'
+            example:
+              code: WECHAT_LOGIN_CODE
+      responses:
+        '200':
+          $ref: '#/components/responses/LoginResponse'
+        '4XX':
+          $ref: '#/components/responses/HttpErrorResponse'
+  /base/biz-city-info:
+    post:
+      operationId: listBusinessCities
+      summary: List supported business cities
+      tags: [Discovery]
+      security: []
+      requestBody:
+        $ref: '#/components/requestBodies/EmptyRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericResponse'
+        '4XX':
+          $ref: '#/components/responses/HttpErrorResponse'
+  /groupClass/schedule/getFilterData:
+    post:
+      operationId: getGroupClassFilters
+      summary: Get available class filters
+      tags: [Classes]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+            example:
+              cityCode: BJS
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericResponse'
+        '4XX':
+          $ref: '#/components/responses/HttpErrorResponse'
+  /groupClass/schedule/scroll:
+    post:
+      operationId: listGroupClassSchedules
+      summary: List group class schedules
+      tags: [Classes]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleScrollRequest'
+            example:
+              queryParam:
+                scene: MAIN
+                longitude: '116.4074'
+                latitude: '39.9042'
+                cityCode: BJS
+                scheduleDate: '2030-01-10'
+                scheduleTimePeriods:
+                  - startTime: '07:00:00'
+                    endTime: '09:00:00'
+                categoryIds: [203]
+                classTypes: []
+                roomIds: []
+                storeIds: []
+                roomTypes: []
+                requireFavoriteCoach: false
+                searchText: ''
+                displayCompleted: false
+              cursor: ''
+              limit: 50
+      responses:
+        '200':
+          $ref: '#/components/responses/ScheduleListResponse'
+        '4XX':
+          $ref: '#/components/responses/HttpErrorResponse'
+  /groupClass/schedule/detail:
+    post:
+      operationId: getGroupClassSchedule
+      summary: Get one group class schedule
+      tags: [Classes]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleIdRequest'
+            example:
+              scheduleId: 12345678
+      responses:
+        '200':
+          $ref: '#/components/responses/ScheduleResponse'
+        '4XX':
+          $ref: '#/components/responses/HttpErrorResponse'
+  /inventory/status/batch-query:
+    post:
+      operationId: getInventoryStatus
+      summary: Get inventory status for classes
+      tags: [Inventory]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryRequest'
+            example:
+              items:
+                - bizItemId: 12345678
+                  productType: GROUP_CLASS
+      responses:
+        '200':
+          $ref: '#/components/responses/InventoryResponse'
+        '4XX':
+          $ref: '#/components/responses/HttpErrorResponse'
+  /order/settle/groupClass:
+    post:
+      operationId: settleGroupClassOrder
+      summary: Preview settlement for one class
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettlementRequest'
+            example:
+              firstSettle: true
+              quantity: 1
+              scheduleId: 12345678
+      responses:
+        '200':
+          $ref: '#/components/responses/SettlementResponse'
+        '4XX':
+          $ref: '#/components/responses/HttpErrorResponse'
+  /order/place:
+    post:
+      operationId: placeGroupClassOrder
+      summary: Create an unpaid class order
+      description: >-
+        This operation creates a real unpaid order and can reserve inventory.
+        Get explicit user approval immediately before this request.
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      x-side-effects:
+        createsUnpaidOrder: true
+        mayReserveInventory: true
+        requiresExplicitUserApproval: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceOrderRequest'
+            example:
+              assetAllocations: []
+              settlementId: SETTLEMENT_PLACEHOLDER
+              settlementVersion: 1
+              waitDeadlineOption: ''
+              items:
+                - bizItemId: 12345678
+                  quantity: 1
+                  productType: GROUP_CLASS
+                  itemSceneCode: GROUP_CLASS
+                  variantCode: VARIANT_PLACEHOLDER
+                  tempItemId: TEMP_ITEM_PLACEHOLDER
+              useSavageCard: false
+      responses:
+        '200':
+          $ref: '#/components/responses/PlaceOrderResponse'
+        '4XX':
+          $ref: '#/components/responses/HttpErrorResponse'
+  /order/query/status:
+    post:
+      operationId: getOrderStatus
+      summary: Get order status
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderIdRequest'
+            example:
+              orderId: ORDER_PLACEHOLDER
+      responses:
+        '200':
+          $ref: '#/components/responses/OrderResponse'
+        '4XX':
+          $ref: '#/components/responses/HttpErrorResponse'
+  /order/list:
+    post:
+      operationId: listOrders
+      summary: List orders by scene
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderListRequest'
+            example:
+              lastOrderId: ''
+              scene: TO_PAY
+      responses:
+        '200':
+          $ref: '#/components/responses/OrderListResponse'
+        '4XX':
+          $ref: '#/components/responses/HttpErrorResponse'
+  /order/detail:
+    post:
+      operationId: getOrderDetail
+      summary: Get order details
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderIdRequest'
+            example:
+              orderId: ORDER_PLACEHOLDER
+      responses:
+        '200':
+          $ref: '#/components/responses/OrderResponse'
+        '4XX':
+          $ref: '#/components/responses/HttpErrorResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  requestBodies:
+    EmptyRequest:
+      required: false
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+          example: {}
+  responses:
+    HttpErrorResponse:
+      description: HTTP client error with an optional API envelope
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    GenericResponse:
+      description: Successful result or a business error envelope
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/GenericSuccessEnvelope'
+              - $ref: '#/components/schemas/ErrorEnvelope'
+    LoginResponse:
+      description: Login result or a business error envelope
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/LoginEnvelope'
+              - $ref: '#/components/schemas/ErrorEnvelope'
+    ScheduleListResponse:
+      description: Schedule list or a business error envelope
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ScheduleListEnvelope'
+              - $ref: '#/components/schemas/ErrorEnvelope'
+    ScheduleResponse:
+      description: Schedule detail or a business error envelope
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ScheduleEnvelope'
+              - $ref: '#/components/schemas/ErrorEnvelope'
+    InventoryResponse:
+      description: Inventory result or a business error envelope
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/InventoryEnvelope'
+              - $ref: '#/components/schemas/ErrorEnvelope'
+    SettlementResponse:
+      description: Settlement result or a business error envelope
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/SettlementEnvelope'
+              - $ref: '#/components/schemas/ErrorEnvelope'
+    PlaceOrderResponse:
+      description: Placed order or a business error envelope
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/PlaceOrderEnvelope'
+              - $ref: '#/components/schemas/ErrorEnvelope'
+    OrderResponse:
+      description: Order result or a business error envelope
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/OrderEnvelope'
+              - $ref: '#/components/schemas/ErrorEnvelope'
+    OrderListResponse:
+      description: Order list or a business error envelope
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/OrderListEnvelope'
+              - $ref: '#/components/schemas/ErrorEnvelope'
+  schemas:
+    SuccessCode:
+      type: integer
+      const: 200
+    ErrorEnvelope:
+      type: object
+      required: [code, msg]
+      properties:
+        code:
+          type: integer
+          enum: [400, 401, 411, 412, 429, 500]
+        msg:
+          type: string
+        data: {}
+      examples:
+        - {code: 400, msg: Invalid request, data: null}
+        - {code: 401, msg: Authentication required, data: null}
+        - {code: 411, msg: Business rule rejected the request, data: null}
+        - {code: 412, msg: Inventory is unavailable, data: null}
+        - {code: 429, msg: Too many requests, data: null}
+        - {code: 500, msg: Server error, data: null}
+    GenericSuccessEnvelope:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {$ref: '#/components/schemas/SuccessCode'}
+        msg: {type: string}
+        data: {}
+    WechatLoginRequest:
+      type: object
+      additionalProperties: false
+      required: [code]
+      properties:
+        code: {type: string, minLength: 1}
+    LoginData:
+      type: object
+      required: [token, expireTime, userId, unionid]
+      properties:
+        token: {type: string, description: Bearer token returned by the service}
+        expireTime: {type: string, description: Authoritative token expiration value}
+        userId: {type: string}
+        unionid: {type: string}
+    LoginEnvelope:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {$ref: '#/components/schemas/SuccessCode'}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/LoginData'}
+    TimePeriod:
+      type: object
+      additionalProperties: false
+      required: [startTime, endTime]
+      properties:
+        startTime: {type: string}
+        endTime: {type: string}
+    ScheduleQuery:
+      type: object
+      required: [scene, cityCode, scheduleDate]
+      properties:
+        scene: {type: string, example: MAIN}
+        longitude: {type: string}
+        latitude: {type: string}
+        cityCode: {type: string, example: BJS}
+        scheduleDate: {type: string, format: date}
+        scheduleTimePeriods:
+          type: array
+          items: {$ref: '#/components/schemas/TimePeriod'}
+        categoryIds: {type: array, items: {type: integer}}
+        classTypes: {type: array, items: {type: string}}
+        roomIds: {type: array, items: {type: integer}}
+        storeIds: {type: array, items: {type: integer}}
+        roomTypes: {type: array, items: {type: string}}
+        requireFavoriteCoach: {type: boolean, default: false}
+        searchText: {type: string}
+        displayCompleted: {type: boolean, default: false}
+    ScheduleScrollRequest:
+      type: object
+      additionalProperties: false
+      required: [queryParam, cursor, limit]
+      properties:
+        queryParam: {$ref: '#/components/schemas/ScheduleQuery'}
+        cursor: {type: string}
+        limit: {type: integer, minimum: 1, maximum: 100}
+    ScheduleIdRequest:
+      type: object
+      additionalProperties: false
+      required: [scheduleId]
+      properties:
+        scheduleId: {type: integer, minimum: 1}
+    Schedule:
+      type: object
+      required: [scheduleId]
+      properties:
+        scheduleId: {type: integer}
+        className: {type: string}
+        storeName: {type: string}
+        roomName: {type: string}
+        coachName: {type: string}
+        startTime: {type: string}
+        endTime: {type: string}
+      additionalProperties: true
+    ScheduleListData:
+      type: object
+      required: [list]
+      properties:
+        list: {type: array, items: {$ref: '#/components/schemas/Schedule'}}
+        cursor: {type: string}
+        hasMore: {type: boolean}
+      additionalProperties: true
+    ScheduleListEnvelope:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {$ref: '#/components/schemas/SuccessCode'}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/ScheduleListData'}
+    ScheduleEnvelope:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {$ref: '#/components/schemas/SuccessCode'}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/Schedule'}
+    InventoryItemRequest:
+      type: object
+      additionalProperties: false
+      required: [bizItemId, productType]
+      properties:
+        bizItemId: {type: integer, minimum: 1}
+        productType: {type: string, const: GROUP_CLASS}
+    InventoryRequest:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items: {type: array, minItems: 1, items: {$ref: '#/components/schemas/InventoryItemRequest'}}
+    InventoryItem:
+      type: object
+      required: [bizItemId, status]
+      properties:
+        bizItemId: {type: integer}
+        status: {type: string, example: NORMAL}
+      additionalProperties: true
+    InventoryEnvelope:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {$ref: '#/components/schemas/SuccessCode'}
+        msg: {type: string}
+        data: {type: array, items: {$ref: '#/components/schemas/InventoryItem'}}
+    SettlementRequest:
+      type: object
+      required: [firstSettle, quantity, scheduleId]
+      properties:
+        firstSettle: {type: boolean}
+        quantity: {type: integer, const: 1}
+        scheduleId: {type: integer, minimum: 1}
+        assetSelection: {}
+        tempItemId: {type: string}
+        variantCode: {type: string}
+        waitDeadlineOption: {type: string}
+      additionalProperties: false
+    SettlementData:
+      type: object
+      required: [settlementId, settlementVersion, variantCode, tempItemId]
+      properties:
+        settlementId: {type: string}
+        settlementVersion: {type: integer}
+        variantCode: {type: string}
+        tempItemId: {type: string}
+        assetAllocations: {type: array, items: {type: object}}
+        payableAmount: {type: number}
+      additionalProperties: true
+    SettlementEnvelope:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {$ref: '#/components/schemas/SuccessCode'}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/SettlementData'}
+    OrderItemRequest:
+      type: object
+      additionalProperties: false
+      required: [bizItemId, quantity, productType, itemSceneCode, variantCode, tempItemId]
+      properties:
+        bizItemId: {type: integer, minimum: 1}
+        quantity: {type: integer, const: 1}
+        productType: {type: string, const: GROUP_CLASS}
+        itemSceneCode: {type: string, const: GROUP_CLASS}
+        variantCode: {type: string}
+        tempItemId: {type: string}
+    PlaceOrderRequest:
+      type: object
+      additionalProperties: false
+      required: [assetAllocations, settlementId, settlementVersion, waitDeadlineOption, items, useSavageCard]
+      properties:
+        assetAllocations: {type: array, items: {type: object}}
+        settlementId: {type: string}
+        settlementVersion: {type: integer}
+        waitDeadlineOption: {type: string}
+        items: {type: array, minItems: 1, maxItems: 1, items: {$ref: '#/components/schemas/OrderItemRequest'}}
+        useSavageCard: {type: boolean, const: false}
+    PlaceOrderData:
+      type: object
+      required: [orderId, needPrepay]
+      properties:
+        orderId: {type: string}
+        needPrepay: {type: boolean}
+        paymentDeadline: {type: string}
+      additionalProperties: true
+    PlaceOrderEnvelope:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {$ref: '#/components/schemas/SuccessCode'}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/PlaceOrderData'}
+    OrderIdRequest:
+      type: object
+      additionalProperties: false
+      required: [orderId]
+      properties:
+        orderId: {type: string, minLength: 1}
+    OrderListRequest:
+      type: object
+      additionalProperties: false
+      required: [lastOrderId, scene]
+      properties:
+        lastOrderId: {type: string}
+        scene: {type: string, enum: [TO_PAY, ALL]}
+    Order:
+      type: object
+      required: [orderId, status]
+      properties:
+        orderId: {type: string}
+        status: {type: string, example: CREATE}
+        scheduleId: {type: integer}
+        paymentDeadline: {type: string}
+        items: {type: array, items: {type: object}}
+      additionalProperties: true
+    OrderEnvelope:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {$ref: '#/components/schemas/SuccessCode'}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/Order'}
+    OrderListData:
+      type: object
+      required: [list]
+      properties:
+        list: {type: array, items: {$ref: '#/components/schemas/Order'}}
+        lastOrderId: {type: string}
+      additionalProperties: true
+    OrderListEnvelope:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {$ref: '#/components/schemas/SuccessCode'}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/OrderListData'}
