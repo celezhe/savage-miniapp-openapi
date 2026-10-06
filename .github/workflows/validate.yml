@@ -11,5 +11,5 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r requirements-dev.txt
-      - run: pytest -q
+      - run: python -m pytest -q
       - run: npx --yes @redocly/cli lint openapi.yaml
