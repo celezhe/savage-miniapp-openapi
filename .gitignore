@@ -1,0 +1,11 @@
+.env
+.env.*
+*.har
+*.proxyman
+*.token
+*token.txt
+api-response*.json
+__pycache__/
+.pytest_cache/
+.DS_Store
+.superpowers/

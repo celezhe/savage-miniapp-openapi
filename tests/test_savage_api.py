@@ -16,9 +16,9 @@ def client(api_server):
 def test_list_inventory_settle_and_place_flow(api_server):
     api_server["responses"].update({
         "/groupClass/schedule/scroll": envelope({"list": [{"scheduleId": 12345678}]}),
-        "/inventory/status/batch-query": envelope([{"bizItemId": 12345678, "status": "NORMAL"}]),
-        "/order/list": envelope({"list": []}),
-        "/order/settle/groupClass": envelope({"settlementId": "S", "settlementVersion": 1, "variantCode": "V", "tempItemId": "T", "assetAllocations": []}),
+        "/inventory/status/batch-query": envelope({"items": [{"bizItemId": 12345678, "status": "NORMAL"}]}),
+        "/order/list": envelope({"orders": []}),
+        "/order/settle/groupClass": envelope({"settlementId": "S", "settlementVersion": 1, "item": {"variantCode": "V", "tempItemId": "T"}, "assetAllocations": []}),
         "/order/place": envelope({"orderId": "O", "needPrepay": True}),
     })
     api = client(api_server)
@@ -46,14 +46,14 @@ def test_http_error_redacts_token(api_server):
 
 
 def test_existing_unpaid_order_stops_before_settlement(api_server):
-    api_server["responses"]["/order/list"] = envelope({"list": [{"orderId": "OLD", "scheduleId": 12345678}]})
+    api_server["responses"]["/order/list"] = envelope({"orders": [{"orderId": "OLD", "scheduleId": 12345678}]})
     with pytest.raises(ApiError, match="already exists"):
         client(api_server).book_unpaid(12345678, approved=True)
     assert [item[0] for item in api_server["requests"]] == ["/order/list"]
 
 
 def test_missing_settlement_fields_stops_before_place(api_server):
-    api_server["responses"]["/order/list"] = envelope({"list": []})
+    api_server["responses"]["/order/list"] = envelope({"orders": []})
     api_server["responses"]["/order/settle/groupClass"] = envelope({"settlementId": "S"})
     with pytest.raises(ApiError, match="missing fields"):
         client(api_server).book_unpaid(12345678, approved=True)
@@ -68,7 +68,7 @@ def test_place_requires_explicit_approval(api_server):
 
 def test_timeout_after_place_reconciles_without_second_place(api_server):
     api_server["responses"]["/order/place"] = socket.timeout("timed out")
-    api_server["responses"]["/order/list"] = envelope({"list": [{"orderId": "O", "scheduleId": 12345678}]})
+    api_server["responses"]["/order/list"] = envelope({"orders": [{"orderId": "O", "scheduleId": 12345678}]})
     api = client(api_server)
     with pytest.raises(UncertainPlacement) as caught:
         api.place({"settlementId": "S", "settlementVersion": 1, "variantCode": "V", "tempItemId": "T", "assetAllocations": []}, 12345678, approved=True)

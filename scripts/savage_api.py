@@ -76,13 +76,19 @@ class SavageClient:
         return self._post("/groupClass/schedule/scroll", query)
 
     def inventory(self, schedule_id: int) -> list[dict[str, Any]]:
-        return self._post("/inventory/status/batch-query", {"items": [{"bizItemId": schedule_id, "productType": "GROUP_CLASS"}]})
+        data = self._post("/inventory/status/batch-query", {"items": [{"bizItemId": schedule_id, "productType": "GROUP_CLASS"}]})
+        return data.get("items", data) if isinstance(data, dict) else data
 
     def list_orders(self, scene: str = "TO_PAY") -> dict[str, Any]:
-        return self._post("/order/list", {"lastOrderId": "", "scene": scene})
+        data = self._post("/order/list", {"lastOrderId": "", "scene": scene})
+        if isinstance(data, dict) and "orders" in data:
+            return {**data, "list": data["orders"]}
+        return data
 
     def settle(self, schedule_id: int) -> dict[str, Any]:
         data = self._post("/order/settle/groupClass", {"firstSettle": True, "quantity": 1, "scheduleId": schedule_id})
+        if isinstance(data, dict) and isinstance(data.get("item"), dict):
+            data = {**data, **data["item"]}
         required = {"settlementId", "settlementVersion", "variantCode", "tempItemId"}
         missing = sorted(required - set(data or {}))
         if missing:
