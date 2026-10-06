@@ -1,5 +1,5 @@
-# Security
+# 安全说明
 
-Do not report a SAVAGE credential in a public issue. Remove tokens, login codes, user IDs, order IDs, and proxy captures from all reports.
+不要在公开 Issue 中提交 SAVAGE Token、微信登录 code、用户 ID、订单 ID、完整 API 响应或代理抓包文件。
 
-This project is unofficial. Report service vulnerabilities to the service owner through an appropriate private channel.
+提交问题前，请删除所有账号信息和凭据。本项目是非官方项目；如果发现服务端安全漏洞，请通过私密渠道联系服务提供方。
