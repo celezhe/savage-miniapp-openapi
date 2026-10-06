@@ -1,0 +1,6 @@
+interface:
+  display_name: "SAVAGE Mini Program API"
+  short_description: "Get a SAVAGE token and create an unpaid class order"
+  default_prompt: "Use $savage-miniapp-openapi to list a class and safely create an unpaid order."
+policy:
+  allow_implicit_invocation: true
