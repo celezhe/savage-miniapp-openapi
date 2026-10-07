@@ -35,6 +35,23 @@ export SAVAGE_TOKEN_FILE=/绝对路径/token
 
 不要把 Token 粘贴到聊天、日志、Shell 历史或 Git 中。抓取完成后，关闭系统代理和 SSL Proxying，并按需移除 Proxyman CA。
 
+## Proxyman 网络排障
+
+如果小程序显示“加载失败请重试”，先检查 macOS 系统代理：
+
+```bash
+scutil --proxy
+```
+
+如果输出包含 `HTTPEnable : 1`、`HTTPSEnable : 1` 和 `127.0.0.1:9090`，系统流量仍经过 Proxyman。
+
+1. 在 Proxyman 中停止 Capture。
+2. 关闭 **Certificate > SSL Proxying List** 中的 SAVAGE 规则。
+3. 关闭 Proxyman 的系统代理覆盖。
+4. 返回微信，然后刷新小程序。
+
+如果 API 可以直接返回 `200`，但小程序仍加载失败，问题通常在本地代理链路，不在 SAVAGE 后端。
+
 ## Token 有效期
 
 - Token 是三段式 JWT，但 payload 只有 `loginId`、`loginType` 和 `rnStr`。
