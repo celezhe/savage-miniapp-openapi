@@ -17,6 +17,7 @@ def test_required_operations_are_documented():
     spec = load_spec()
     expected = {
         "/auth/wechat/login": "loginWithWechatCode",
+        "/user/profile/detail": "getUserProfile",
         "/groupClass/schedule/scroll": "listGroupClassSchedules",
         "/groupClass/schedule/detail": "getGroupClassSchedule",
         "/inventory/status/batch-query": "getInventoryStatus",

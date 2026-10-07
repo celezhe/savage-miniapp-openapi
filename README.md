@@ -5,6 +5,7 @@
 项目支持：
 
 - 获取并安全保存 Bearer Token
+- 根据 Bearer Token 查询当前账号资料
 - 查询团课和 `scheduleId`
 - 查询课程库存
 - 创建结算预览
@@ -47,12 +48,15 @@ export SAVAGE_TOKEN_FILE=/绝对路径/token
 ## 命令行用法
 
 ```bash
+python3 scripts/savage_api.py profile
 python3 scripts/savage_api.py classes query.json
 python3 scripts/savage_api.py inventory 12345678
 python3 scripts/savage_api.py orders --scene TO_PAY
 python3 scripts/savage_api.py settle 12345678
 python3 scripts/savage_api.py book-unpaid 12345678
 ```
+
+`profile` 调用只读接口 `POST /user/profile/detail`。响应可以包含昵称、脱敏手机号、生日和其他个人资料。不要公开响应内容。
 
 `book-unpaid` 会检查库存和待支付订单，展示结算信息，并要求输入准确的确认文本。每次确认最多发送一次 `order/place`。出现不确定响应时，必须先查询待支付订单，不能直接重试。
 

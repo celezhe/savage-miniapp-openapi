@@ -81,6 +81,9 @@ class SavageClient:
     def list_classes(self, query: dict[str, Any]) -> dict[str, Any]:
         return self._post("/groupClass/schedule/scroll", query)
 
+    def profile(self) -> dict[str, Any]:
+        return self._post("/user/profile/detail", {})
+
     def inventory(self, schedule_id: int) -> list[dict[str, Any]]:
         data = self._post("/inventory/status/batch-query", {"items": [{"bizItemId": schedule_id, "productType": "GROUP_CLASS"}]})
         return data.get("items", data) if isinstance(data, dict) else data
@@ -152,6 +155,7 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     classes = sub.add_parser("classes")
     classes.add_argument("query_file", type=Path)
+    sub.add_parser("profile")
     inventory = sub.add_parser("inventory")
     inventory.add_argument("schedule_id", type=int)
     orders = sub.add_parser("orders")
@@ -166,6 +170,8 @@ def main(argv: list[str] | None = None) -> int:
         api = SavageClient(read_token(token_path), base_url=args.base_url)
         if args.command == "classes":
             result = api.list_classes(json.loads(args.query_file.read_text()))
+        elif args.command == "profile":
+            result = api.profile()
         elif args.command == "inventory":
             result = api.inventory(args.schedule_id)
         elif args.command == "orders":

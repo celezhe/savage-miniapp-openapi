@@ -1,6 +1,6 @@
 ---
 name: savage-miniapp-openapi
-description: "Use for the SAVAGE WeChat Mini Program API: get and store a bearer token, list classes, find a schedule ID, check inventory, settle a class, or create one unpaid order without payment."
+description: "Use for the SAVAGE WeChat Mini Program API: get and store a bearer token, read the account profile, list classes, find a schedule ID, check inventory, settle a class, or create one unpaid order without payment."
 ---
 
 # SAVAGE Mini Program OpenAPI
@@ -11,6 +11,7 @@ Use this skill only for an account that the user owns or controls. Treat every t
 
 - For a missing or expired token, use **Get a token**.
 - For schedules only, stop after **List classes**.
+- For account information, run `python3 scripts/savage_api.py profile` and stop.
 - For an unpaid reservation, follow **Book one unpaid class** in order.
 
 ## Get a token

@@ -14,6 +14,8 @@ servers:
 tags:
   - name: Authentication
     description: Exchange a WeChat code for SAVAGE credentials.
+  - name: Accounts
+    description: Read profile data for the authenticated account.
   - name: Discovery
     description: Get public city and filter information.
   - name: Classes
@@ -40,6 +42,20 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/LoginResponse'
+        '4XX':
+          $ref: '#/components/responses/HttpErrorResponse'
+  /user/profile/detail:
+    post:
+      operationId: getUserProfile
+      summary: Get the profile for the authenticated account
+      tags: [Accounts]
+      security:
+        - bearerAuth: []
+      requestBody:
+        $ref: '#/components/requestBodies/EmptyRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/ProfileResponse'
         '4XX':
           $ref: '#/components/responses/HttpErrorResponse'
   /base/biz-city-info:
@@ -312,6 +328,14 @@ components:
             oneOf:
               - $ref: '#/components/schemas/LoginEnvelope'
               - $ref: '#/components/schemas/ErrorEnvelope'
+    ProfileResponse:
+      description: Account profile or a business error envelope
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ProfileEnvelope'
+              - $ref: '#/components/schemas/ErrorEnvelope'
     ScheduleListResponse:
       description: Schedule list or a business error envelope
       content:
@@ -417,6 +441,28 @@ components:
         code: {$ref: '#/components/schemas/SuccessCode'}
         msg: {type: string}
         data: {$ref: '#/components/schemas/LoginData'}
+    ProfileData:
+      type: object
+      required: [userId, phoneBound, birthdayEditable]
+      properties:
+        userId: {type: integer}
+        avatarUrl: {type: string}
+        nickname: {type: string}
+        gender: {type: integer, enum: [0, 1, 2, 3]}
+        heightCm: {type: integer}
+        weightKg: {type: integer}
+        birthday: {type: string, format: date}
+        birthdayEditable: {type: boolean}
+        phoneMasked: {type: string}
+        phoneBound: {type: boolean}
+      additionalProperties: true
+    ProfileEnvelope:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {$ref: '#/components/schemas/SuccessCode'}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/ProfileData'}
     TimePeriod:
       type: object
       additionalProperties: false

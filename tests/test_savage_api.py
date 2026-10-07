@@ -13,6 +13,12 @@ def client(api_server):
     return SavageClient("secret-token", base_url=api_server["url"], timeout=0.2)
 
 
+def test_get_profile(api_server):
+    api_server["responses"]["/user/profile/detail"] = envelope({"userId": 123, "phoneBound": True})
+    assert client(api_server).profile() == {"userId": 123, "phoneBound": True}
+    assert api_server["requests"][0][:2] == ("/user/profile/detail", {})
+
+
 def test_list_inventory_settle_and_place_flow(api_server):
     api_server["responses"].update({
         "/groupClass/schedule/scroll": envelope({"list": [{"scheduleId": 12345678}]}),
