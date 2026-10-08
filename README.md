@@ -98,6 +98,30 @@ python3 scripts/savage_api.py book-unpaid 12345678
 
 这些接口已经加入 OpenAPI。未确认的响应字段继续使用开放结构，避免根据名称猜测业务含义。
 
+## 年卡账号实测
+
+2026-10-08 使用年卡账号完成了一次真实的课程列表、结算、零元预约、订单查询和退款流程。以下接口均返回 HTTP 200：
+
+- 课程列表：`POST /groupClass/schedule/scroll`
+- 课程详情：`POST /groupClass/schedule/detail`
+- 库存：`POST /inventory/status/batch-query`
+- 等候人数：`POST /inventory/waiting-count/batch-query`
+- 年卡结算：`POST /order/settle/groupClass`
+- 下单：`POST /order/place`
+- 订单状态：`POST /order/query/status`
+- 零元支付准备：`POST /payment/prepay`
+- 支付成功详情：`POST /order/paySuccess`
+- 订单列表：`POST /order/list`，实测场景为 `TO_PAY`、`COMPLETED` 和 `ALL`
+- 订单详情：`POST /order/detail`
+- 退款预览：`POST /refund/group-class/preview`
+- 退款原因：`POST /refund/reasons`
+- 退款申请：`POST /refund/group-class/apply`
+- 退款详情：`POST /refund/order/detail`
+
+课程和订单接口没有按年卡账号另起一套路径。年卡差异主要体现在结算结果的 `membershipCard`、`assetAllocations`、`selectedAssetPlan` 以及下单请求的资产抵扣字段。
+
+`/payment/prepay` 仅作为观察结果记录，不加入可执行 OpenAPI，也不由命令行客户端调用。
+
 `book-unpaid` 会检查库存和待支付订单，展示结算信息，并要求输入准确的确认文本。每次确认最多发送一次 `order/place`。出现不确定响应时，必须先查询待支付订单，不能直接重试。
 
 ## Token 获取 Skill

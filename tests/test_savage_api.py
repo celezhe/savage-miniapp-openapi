@@ -14,8 +14,13 @@ def client(api_server):
 
 
 def test_get_profile(api_server):
-    api_server["responses"]["/user/profile/detail"] = envelope({"userId": 123, "phoneBound": True})
-    assert client(api_server).profile() == {"userId": 123, "phoneBound": True}
+    api_server["responses"]["/user-base/get-user-base-info"] = envelope(
+        {"membershipCardHolder": True, "sessionCardHolder": False}
+    )
+    assert client(api_server).profile() == {
+        "membershipCardHolder": True,
+        "sessionCardHolder": False,
+    }
     assert api_server["requests"][0][:2] == ("/user/profile/detail", {})
 
 

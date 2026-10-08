@@ -24,6 +24,8 @@ tags:
     description: Check current class inventory.
   - name: Orders
     description: Preview and create unpaid class orders.
+  - name: Refunds
+    description: Preview, apply for, and inspect refunds.
 paths:
   /auth/wechat/login:
     post:
@@ -240,6 +242,19 @@ paths:
           $ref: '#/components/responses/InventoryResponse'
         '4XX':
           $ref: '#/components/responses/HttpErrorResponse'
+  /inventory/waiting-count/batch-query:
+    post:
+      operationId: getInventoryWaitingCount
+      summary: Get waiting counts for classes
+      tags: [Inventory]
+      security: [{bearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/InventoryRequest'}
+      responses:
+        '200': {$ref: '#/components/responses/GenericResponse'}
   /order/settle/groupClass:
     post:
       operationId: settleGroupClassOrder
@@ -294,7 +309,6 @@ paths:
                   itemSceneCode: GROUP_CLASS
                   variantCode: VARIANT_PLACEHOLDER
                   tempItemId: TEMP_ITEM_PLACEHOLDER
-              useSavageCard: false
       responses:
         '200':
           $ref: '#/components/responses/PlaceOrderResponse'
@@ -312,9 +326,10 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/OrderIdRequest'
+              $ref: '#/components/schemas/OrderStatusRequest'
             example:
               orderId: ORDER_PLACEHOLDER
+              times: 1
       responses:
         '200':
           $ref: '#/components/responses/OrderResponse'
@@ -361,6 +376,85 @@ paths:
           $ref: '#/components/responses/OrderResponse'
         '4XX':
           $ref: '#/components/responses/HttpErrorResponse'
+  /order/paySuccess:
+    post:
+      operationId: getSuccessfulOrder
+      summary: Get order data after successful payment or zero-price card deduction
+      tags: [Orders]
+      security: [{bearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/OrderIdRequest'}
+      responses:
+        '200': {$ref: '#/components/responses/GenericResponse'}
+  /user/my:
+    post:
+      operationId: getMyAccountSummary
+      summary: Get the authenticated user's account and asset summary
+      tags: [Accounts]
+      security: [{bearerAuth: []}]
+      requestBody: {$ref: '#/components/requestBodies/EmptyRequest'}
+      responses:
+        '200': {$ref: '#/components/responses/GenericResponse'}
+  /sessioncard/my/checkout-cards:
+    post:
+      operationId: getCheckoutSessionCards
+      summary: Get session cards available at checkout
+      tags: [Orders]
+      security: [{bearerAuth: []}]
+      responses:
+        '200': {$ref: '#/components/responses/GenericResponse'}
+  /coupon/my/checkout-coupons:
+    post:
+      operationId: getCheckoutCoupons
+      summary: Get coupons available at checkout
+      tags: [Orders]
+      security: [{bearerAuth: []}]
+      responses:
+        '200': {$ref: '#/components/responses/GenericResponse'}
+  /message/subscribe/quota/add:
+    post:
+      operationId: addMessageSubscriptionQuota
+      summary: Add message-subscription quota after user consent
+      tags: [Accounts]
+      security: [{bearerAuth: []}]
+      responses:
+        '200': {$ref: '#/components/responses/GenericResponse'}
+  /refund/reasons:
+    post:
+      operationId: listRefundReasons
+      summary: List refund reasons for a product type
+      tags: [Refunds]
+      security: [{bearerAuth: []}]
+      responses:
+        '200': {$ref: '#/components/responses/GenericResponse'}
+  /refund/group-class/preview:
+    post:
+      operationId: previewGroupClassRefund
+      summary: Preview a group-class refund
+      tags: [Refunds]
+      security: [{bearerAuth: []}]
+      responses:
+        '200': {$ref: '#/components/responses/GenericResponse'}
+  /refund/group-class/apply:
+    post:
+      operationId: applyGroupClassRefund
+      summary: Apply for a real group-class refund
+      tags: [Refunds]
+      security: [{bearerAuth: []}]
+      x-side-effects: {createsRefund: true, requiresExplicitUserApproval: true}
+      responses:
+        '200': {$ref: '#/components/responses/GenericResponse'}
+  /refund/order/detail:
+    post:
+      operationId: getRefundOrderDetail
+      summary: Get refund progress and returned assets
+      tags: [Refunds]
+      security: [{bearerAuth: []}]
+      responses:
+        '200': {$ref: '#/components/responses/GenericResponse'}
 components:
   securitySchemes:
     bearerAuth:
@@ -626,7 +720,8 @@ components:
       additionalProperties: false
       required: [scheduleId]
       properties:
-        scheduleId: {type: integer, minimum: 1}
+        scheduleId:
+          oneOf: [{type: string, minLength: 1}, {type: integer, minimum: 1}]
     Schedule:
       type: object
       required: [scheduleId]
@@ -694,22 +789,24 @@ components:
       properties:
         firstSettle: {type: boolean}
         quantity: {type: integer, const: 1}
-        scheduleId: {type: integer, minimum: 1}
-        assetSelection: {}
-        tempItemId: {type: string}
-        variantCode: {type: string}
-        waitDeadlineOption: {type: string}
+        scheduleId:
+          oneOf: [{type: string, minLength: 1}, {type: integer, minimum: 1}]
       additionalProperties: false
     SettlementData:
       type: object
-      required: [settlementId, settlementVersion, variantCode, tempItemId]
+      required: [settlementId, settlementVersion]
       properties:
         settlementId: {type: string}
         settlementVersion: {type: integer}
-        variantCode: {type: string}
-        tempItemId: {type: string}
-        assetAllocations: {type: array, items: {type: object}}
-        payableAmount: {type: number}
+        assetAllocations:
+          type: array
+          items: {$ref: '#/components/schemas/AssetAllocationRequest'}
+        item: {type: object}
+        membershipCard: {type: object}
+        orderableTime: {}
+        priceSummary: {type: object}
+        savageCard: {type: object}
+        selectedAssetPlan: {type: object}
       additionalProperties: true
     SettlementEnvelope:
       type: object
@@ -723,7 +820,8 @@ components:
       additionalProperties: false
       required: [bizItemId, quantity, productType, itemSceneCode, variantCode, tempItemId]
       properties:
-        bizItemId: {type: integer, minimum: 1}
+        bizItemId:
+          oneOf: [{type: string, minLength: 1}, {type: integer, minimum: 1}]
         quantity: {type: integer, const: 1}
         productType: {type: string, const: GROUP_CLASS}
         itemSceneCode: {type: string, const: GROUP_CLASS}
@@ -732,14 +830,23 @@ components:
     PlaceOrderRequest:
       type: object
       additionalProperties: false
-      required: [assetAllocations, settlementId, settlementVersion, waitDeadlineOption, items, useSavageCard]
+      required: [assetAllocations, settlementId, settlementVersion, waitDeadlineOption, items]
       properties:
         assetAllocations: {type: array, items: {type: object}}
         settlementId: {type: string}
         settlementVersion: {type: integer}
         waitDeadlineOption: {type: string}
         items: {type: array, minItems: 1, maxItems: 1, items: {$ref: '#/components/schemas/OrderItemRequest'}}
-        useSavageCard: {type: boolean, const: false}
+    AssetAllocationRequest:
+      type: object
+      required: [amount, assetId, deductionType, quantity, tempItemId]
+      properties:
+        amount: {type: number}
+        assetId: {type: string}
+        deductionType: {type: string}
+        quantity: {type: integer}
+        tempItemId: {type: string}
+      additionalProperties: false
     PlaceOrderData:
       type: object
       required: [orderId, needPrepay]
@@ -761,13 +868,20 @@ components:
       required: [orderId]
       properties:
         orderId: {type: string, minLength: 1}
+    OrderStatusRequest:
+      allOf:
+        - {$ref: '#/components/schemas/OrderIdRequest'}
+        - type: object
+          required: [times]
+          properties:
+            times: {type: integer, minimum: 0}
     OrderListRequest:
       type: object
       additionalProperties: false
       required: [lastOrderId, scene]
       properties:
         lastOrderId: {type: string}
-        scene: {type: string, enum: [TO_PAY, ALL]}
+        scene: {type: string, enum: [TO_PAY, COMPLETED, ALL]}
     Order:
       type: object
       required: [orderId, status]
