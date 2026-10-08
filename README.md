@@ -60,12 +60,17 @@ scutil --proxy
 - 小程序同时兼容秒级和毫秒级时间戳，并以 `expireTime > 当前时间` 判断登录状态。
 - 没有发现 refresh token。接口返回 `401` 后，必须重新执行 `wx.login()` 并换取新 Token。
 
-该 Token 的结构与 Sa-Token JWT 相符。Sa-Token 默认超时是 30 天，但 SAVAGE 后端可以覆盖该配置。因此，必须以每次登录响应中的 `expireTime` 为准，不能仅根据框架默认值断言实际 TTL。
+2026-10-08 的一次真实登录响应返回了毫秒级 `expireTime`。该时间比登录响应时间晚约 30 天。实测差值为 2,592,002 秒，即 30 天加约 2 秒。
+
+因此，当前观察到的 Token TTL 是约 30 天。这是接口响应中的直接证据，不是根据框架默认值推断的结论。后端仍可修改 TTL，所以客户端必须以每次登录响应中的 `expireTime` 为准。
+
+该 Token 的结构与 Sa-Token JWT 相符。JWT payload 本身不包含过期时间。不要仅解析 JWT 来判断 Token 是否有效。
 
 ## 命令行用法
 
 ```bash
 python3 scripts/savage_api.py profile
+python3 scripts/savage_api.py display-profile
 python3 scripts/savage_api.py classes query.json
 python3 scripts/savage_api.py inventory 12345678
 python3 scripts/savage_api.py orders --scene TO_PAY
@@ -73,7 +78,25 @@ python3 scripts/savage_api.py settle 12345678
 python3 scripts/savage_api.py book-unpaid 12345678
 ```
 
-`profile` 调用只读接口 `POST /user/profile/detail`。响应可以包含昵称、脱敏手机号、生日和其他个人资料。不要公开响应内容。
+`profile` 调用 `POST /user-base/get-user-base-info`。响应包含账号状态和持卡状态。
+
+`display-profile` 调用 `POST /user/profile/detail`。响应包含昵称、头像和脱敏资料等展示字段。
+
+两个接口的路径和字段均不同。它们不是按账号类型互斥的接口。使用同一个年卡 Token 调用两者时，两个接口都返回 `200`。
+
+不要公开任何账号资料响应。
+
+2026-10-08 使用年卡账号测试时，接口返回 `membershipCardHolder: true` 和 `sessionCardHolder: false`。这证明该接口可以识别会员卡持有人。
+
+同次启动流量还观察到以下接口：
+
+- `POST /user-base/check-user-hook`
+- `POST /message/subscribe/quota/query`
+- `POST /user/agreement/status`
+- `POST /operation/position/query`
+- `POST /trainingCamp/cohort/recommendation`
+
+这些接口已经加入 OpenAPI。未确认的响应字段继续使用开放结构，避免根据名称猜测业务含义。
 
 `book-unpaid` 会检查库存和待支付订单，展示结算信息，并要求输入准确的确认文本。每次确认最多发送一次 `order/place`。出现不确定响应时，必须先查询待支付订单，不能直接重试。
 

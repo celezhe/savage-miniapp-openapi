@@ -82,6 +82,9 @@ class SavageClient:
         return self._post("/groupClass/schedule/scroll", query)
 
     def profile(self) -> dict[str, Any]:
+        return self._post("/user-base/get-user-base-info", {})
+
+    def display_profile(self) -> dict[str, Any]:
         return self._post("/user/profile/detail", {})
 
     def inventory(self, schedule_id: int) -> list[dict[str, Any]]:
@@ -156,6 +159,7 @@ def main(argv: list[str] | None = None) -> int:
     classes = sub.add_parser("classes")
     classes.add_argument("query_file", type=Path)
     sub.add_parser("profile")
+    sub.add_parser("display-profile")
     inventory = sub.add_parser("inventory")
     inventory.add_argument("schedule_id", type=int)
     orders = sub.add_parser("orders")
@@ -172,6 +176,8 @@ def main(argv: list[str] | None = None) -> int:
             result = api.list_classes(json.loads(args.query_file.read_text()))
         elif args.command == "profile":
             result = api.profile()
+        elif args.command == "display-profile":
+            result = api.display_profile()
         elif args.command == "inventory":
             result = api.inventory(args.schedule_id)
         elif args.command == "orders":

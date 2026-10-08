@@ -25,7 +25,9 @@ Use this skill only for an account that the user owns or controls. Treat every t
 7. Run `chmod 600 /absolute/path/to/token` and set `SAVAGE_TOKEN_FILE` to that path.
 8. Disable the system proxy and SSL Proxying. Remove the Proxyman CA when inspection is no longer needed.
 
-The login response `expireTime` is the only observed TTL source. The token can look like a JWT but can omit `exp`, `iat`, and `nbf`. No refresh token was observed. If an API response has code `401`, repeat this workflow with a new `wx.login()` code.
+The login response `expireTime` is the only observed TTL source. One captured response set it about 30 days after login. The measured difference was 2,592,002 seconds. Treat this value as evidence for that login, not as a permanent service guarantee.
+
+The token can look like a JWT but can omit `exp`, `iat`, and `nbf`. No refresh token was observed. If an API response has code `401`, repeat this workflow with a new `wx.login()` code.
 
 ## Book one unpaid class
 

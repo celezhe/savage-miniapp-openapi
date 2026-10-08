@@ -47,7 +47,8 @@ paths:
   /user/profile/detail:
     post:
       operationId: getUserProfile
-      summary: Get the profile for the authenticated account
+      summary: Get display profile details for the authenticated account
+      description: Returns display-profile fields. A membership-card token can also call this endpoint.
       tags: [Accounts]
       security:
         - bearerAuth: []
@@ -58,6 +59,76 @@ paths:
           $ref: '#/components/responses/ProfileResponse'
         '4XX':
           $ref: '#/components/responses/HttpErrorResponse'
+  /user-base/get-user-base-info:
+    post:
+      operationId: getUserBaseInfo
+      summary: Get account and membership-card status
+      description: Returns account-state fields, including membership-card and session-card status.
+      tags: [Accounts]
+      security:
+        - bearerAuth: []
+      requestBody:
+        $ref: '#/components/requestBodies/EmptyRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserBaseInfoResponse'
+        '4XX':
+          $ref: '#/components/responses/HttpErrorResponse'
+  /user-base/check-user-hook:
+    post:
+      operationId: checkUserHook
+      summary: Check account hooks during Mini Program startup
+      tags: [Accounts]
+      security:
+        - bearerAuth: []
+      requestBody:
+        $ref: '#/components/requestBodies/EmptyRequest'
+      responses:
+        '200': {$ref: '#/components/responses/GenericResponse'}
+  /message/subscribe/quota/query:
+    post:
+      operationId: getMessageSubscriptionQuota
+      summary: Get the account message-subscription quota
+      tags: [Accounts]
+      security:
+        - bearerAuth: []
+      requestBody:
+        $ref: '#/components/requestBodies/EmptyRequest'
+      responses:
+        '200': {$ref: '#/components/responses/GenericResponse'}
+  /user/agreement/status:
+    post:
+      operationId: getUserAgreementStatus
+      summary: Get the account agreement status
+      tags: [Accounts]
+      security:
+        - bearerAuth: []
+      requestBody:
+        $ref: '#/components/requestBodies/EmptyRequest'
+      responses:
+        '200': {$ref: '#/components/responses/GenericResponse'}
+  /operation/position/query:
+    post:
+      operationId: listOperationPositions
+      summary: Get operation positions for the current page
+      tags: [Accounts]
+      security:
+        - bearerAuth: []
+      requestBody:
+        $ref: '#/components/requestBodies/EmptyRequest'
+      responses:
+        '200': {$ref: '#/components/responses/GenericResponse'}
+  /trainingCamp/cohort/recommendation:
+    post:
+      operationId: getTrainingCampRecommendations
+      summary: Get training-camp recommendations
+      tags: [Classes]
+      security:
+        - bearerAuth: []
+      requestBody:
+        $ref: '#/components/requestBodies/EmptyRequest'
+      responses:
+        '200': {$ref: '#/components/responses/GenericResponse'}
   /base/biz-city-info:
     post:
       operationId: listBusinessCities
@@ -336,6 +407,14 @@ components:
             oneOf:
               - $ref: '#/components/schemas/ProfileEnvelope'
               - $ref: '#/components/schemas/ErrorEnvelope'
+    UserBaseInfoResponse:
+      description: Account base information or a business error envelope
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/UserBaseInfoEnvelope'
+              - $ref: '#/components/schemas/ErrorEnvelope'
     ScheduleListResponse:
       description: Schedule list or a business error envelope
       content:
@@ -431,7 +510,17 @@ components:
       required: [token, expireTime, userId, unionid]
       properties:
         token: {type: string, description: Bearer token returned by the service}
-        expireTime: {type: string, description: Authoritative token expiration value}
+        expireTime:
+          description: >-
+            Authoritative absolute expiration time. A captured login response used Unix
+            milliseconds and set this value about 30 days after the login response.
+            The Mini Program also accepts a numeric string and second-based timestamps.
+          oneOf:
+            - type: integer
+              format: int64
+              example: 1794027878115
+            - type: string
+              pattern: '^[0-9]+$'
         userId: {type: string}
         unionid: {type: string}
     LoginEnvelope:
@@ -463,6 +552,40 @@ components:
         code: {$ref: '#/components/schemas/SuccessCode'}
         msg: {type: string}
         data: {$ref: '#/components/schemas/ProfileData'}
+    MembershipCardResignStatus:
+      type: object
+      properties:
+        needResign: {type: boolean}
+      additionalProperties: true
+    UserBaseInfoData:
+      type: object
+      required: [membershipCardHolder, sessionCardHolder]
+      properties:
+        membershipCardHolder:
+          type: boolean
+          description: True when the account holds a membership card.
+        sessionCardHolder:
+          type: boolean
+          description: True when the account holds a session card.
+        migrationMembershipCardResign:
+          $ref: '#/components/schemas/MembershipCardResignStatus'
+        customerServicePartnerId: {}
+        faceEnrolled: {type: boolean}
+        messageSubscribeTriggerItems:
+          type: array
+          items: {}
+        phoneNumber:
+          type: string
+          description: Sensitive account data. Do not log this value.
+        showWatermark: {type: boolean}
+      additionalProperties: true
+    UserBaseInfoEnvelope:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {$ref: '#/components/schemas/SuccessCode'}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/UserBaseInfoData'}
     TimePeriod:
       type: object
       additionalProperties: false
