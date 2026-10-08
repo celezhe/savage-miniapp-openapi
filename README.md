@@ -120,7 +120,20 @@ python3 scripts/savage_api.py book-unpaid 12345678
 
 课程和订单接口没有按年卡账号另起一套路径。年卡差异主要体现在结算结果的 `membershipCard`、`assetAllocations`、`selectedAssetPlan` 以及下单请求的资产抵扣字段。
 
-`/payment/prepay` 仅作为观察结果记录，不加入可执行 OpenAPI，也不由命令行客户端调用。
+`/payment/prepay` 已加入 OpenAPI。年卡零元预约在 `order/place` 后调用该接口。实测响应中的 `prePayItems` 为空。
+
+该接口不等于 `wx.requestPayment`。仓库不实现微信付款调用。
+
+2026-10-08 使用年卡 Token 完成了一次 API 端到端预约。流程为：
+
+```text
+schedule/scroll → inventory/status/batch-query → order/settle/groupClass
+→ order/place → payment/prepay → order/query/status → order/paySuccess
+```
+
+该次预约的 `payment/prepay` 返回空 `prePayItems`。流程没有调用 `wx.requestPayment`。
+
+同一订单随后通过退款 API 取消。`refund/group-class/apply` 返回成功，`refund/order/detail` 返回三步进度和一项退回资产。
 
 `book-unpaid` 会检查库存和待支付订单，展示结算信息，并要求输入准确的确认文本。每次确认最多发送一次 `order/place`。出现不确定响应时，必须先查询待支付订单，不能直接重试。
 

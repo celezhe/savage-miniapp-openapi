@@ -54,10 +54,14 @@ def test_protected_operations_use_bearer_auth():
             assert operation.get("security") == [{"bearerAuth": []}]
 
 
-def test_payment_operations_are_absent():
-    serialized = SPEC_PATH.read_text(encoding="utf-8") if SPEC_PATH.exists() else ""
-    assert "payment/prepay" not in serialized
-    assert "wx.requestPayment" not in serialized
+def test_prepay_does_not_invoke_wechat_payment():
+    spec = load_spec()
+    operation = spec["paths"]["/payment/prepay"]["post"]
+    assert operation["x-side-effects"] == {
+        "canAdvanceOrderState": True,
+        "requiresExplicitUserApproval": True,
+        "invokesWechatPayment": False,
+    }
 
 
 def test_place_declares_real_order_side_effect():

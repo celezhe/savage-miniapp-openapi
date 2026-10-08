@@ -41,7 +41,9 @@ Perform these steps in this exact order:
 6. After approval, run `python3 scripts/savage_api.py book-unpaid SCHEDULE_ID`. Allow one `order/place` attempt only.
 7. **Query the order.** Confirm the returned order with the order-list or status endpoint and report the unpaid deadline.
 
-Do not pay. Never call a prepay endpoint or `wx.requestPayment`. Do not make concurrent booking requests or use high-frequency polling.
+Do not pay. For a zero-price membership booking, call `payment/prepay` only after the approved `order/place` response. Never call `wx.requestPayment`.
+
+Do not make concurrent booking requests or use high-frequency polling.
 
 ## Failure rules
 

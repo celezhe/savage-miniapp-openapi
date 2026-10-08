@@ -389,6 +389,28 @@ paths:
             schema: {$ref: '#/components/schemas/OrderIdRequest'}
       responses:
         '200': {$ref: '#/components/responses/GenericResponse'}
+  /payment/prepay:
+    post:
+      operationId: prepareOrderPayment
+      summary: Prepare payment or complete a zero-price membership booking
+      description: >-
+        The membership-card flow calls this endpoint after order/place. A zero-price
+        booking returned an empty prePayItems array. This endpoint does not call
+        wx.requestPayment.
+      tags: [Orders]
+      security: [{bearerAuth: []}]
+      x-side-effects:
+        canAdvanceOrderState: true
+        requiresExplicitUserApproval: true
+        invokesWechatPayment: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/OrderIdRequest'}
+            example: {orderId: ORDER_PLACEHOLDER}
+      responses:
+        '200': {$ref: '#/components/responses/GenericResponse'}
   /user/my:
     post:
       operationId: getMyAccountSummary

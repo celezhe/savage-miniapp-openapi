@@ -97,6 +97,17 @@ class SavageClient:
             return {**data, "list": data["orders"]}
         return data
 
+    def prepay(self, order_id: str, *, approved: bool) -> dict[str, Any]:
+        if not approved:
+            raise ApprovalRequired("Explicit approval is required before payment/prepay")
+        return self._post("/payment/prepay", {"orderId": order_id})
+
+    def order_status(self, order_id: str, times: int = 1) -> dict[str, Any]:
+        return self._post("/order/query/status", {"orderId": order_id, "times": times})
+
+    def pay_success(self, order_id: str) -> dict[str, Any]:
+        return self._post("/order/paySuccess", {"orderId": order_id})
+
     def settle(self, schedule_id: int) -> dict[str, Any]:
         data = self._post("/order/settle/groupClass", {"firstSettle": True, "quantity": 1, "scheduleId": schedule_id})
         if isinstance(data, dict) and isinstance(data.get("item"), dict):
@@ -126,7 +137,6 @@ class SavageClient:
                 "variantCode": settlement["variantCode"],
                 "tempItemId": settlement["tempItemId"],
             }],
-            "useSavageCard": False,
         }
         return self._post("/order/place", payload, placement=True)
 
@@ -168,6 +178,8 @@ def main(argv: list[str] | None = None) -> int:
     settle.add_argument("schedule_id", type=int)
     book = sub.add_parser("book-unpaid")
     book.add_argument("schedule_id", type=int)
+    prepay = sub.add_parser("prepay")
+    prepay.add_argument("order_id")
     args = parser.parse_args(argv)
     try:
         token_path = Path(os.environ["SAVAGE_TOKEN_FILE"])
@@ -184,6 +196,12 @@ def main(argv: list[str] | None = None) -> int:
             result = api.list_orders(args.scene)
         elif args.command == "settle":
             result = api.settle(args.schedule_id)
+        elif args.command == "prepay":
+            approval = input("Type PREPARE ZERO PRICE BOOKING to continue: ")
+            result = api.prepay(
+                args.order_id,
+                approved=approval == "PREPARE ZERO PRICE BOOKING",
+            )
         else:
             inventory_result = api.inventory(args.schedule_id)
             if not inventory_result or inventory_result[0].get("status") != "NORMAL":
