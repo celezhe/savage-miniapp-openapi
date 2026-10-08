@@ -1,0 +1,4 @@
+interface:
+  display_name: "SAVAGE Token 获取"
+  short_description: "安全抓取、保存并验证 SAVAGE 小程序 Token"
+  default_prompt: "Use $get-savage-token to capture and safely store a new SAVAGE Mini Program token."

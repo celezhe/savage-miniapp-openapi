@@ -100,6 +100,12 @@ python3 scripts/savage_api.py book-unpaid 12345678
 
 `book-unpaid` 会检查库存和待支付订单，展示结算信息，并要求输入准确的确认文本。每次确认最多发送一次 `order/place`。出现不确定响应时，必须先查询待支付订单，不能直接重试。
 
+## Token 获取 Skill
+
+仓库中的 [`skills/get-savage-token`](skills/get-savage-token) 是独立的 Codex Skill。它用于每月轮换 Token，或在 Token 被撤销、过期后重新获取。
+
+该 Skill 指导 Codex 从官方 SAVAGE 小程序的登录响应中获取 `token` 和 `expireTime`，将 Token 安全写入仓库外的 `.env`，并通过只读接口验证。Skill 和仓库都不包含真实 Token。
+
 ## 文件说明
 
 - `openapi.yaml`：已观察到的 API 合约。
