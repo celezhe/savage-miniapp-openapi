@@ -143,6 +143,12 @@ schedule/scroll → inventory/status/batch-query → order/settle/groupClass
 
 该 Skill 指导 Codex 从官方 SAVAGE 小程序的登录响应中获取 `token` 和 `expireTime`，将 Token 安全写入仓库外的 `.env`，并通过只读接口验证。Skill 和仓库都不包含真实 Token。
 
+## 年卡抢课 Skill
+
+[`skills/savage-membership-booking`](skills/savage-membership-booking) 提供两条简化流程：预约年卡课程，以及取消课程并退回权益。
+
+预约前必须检查课程详情、`canBook` 状态、库存状态和零元年卡结算。任何检查失败时，Skill 不调用 `order/place`。
+
 ## 文件说明
 
 - `openapi.yaml`：已观察到的 API 合约。

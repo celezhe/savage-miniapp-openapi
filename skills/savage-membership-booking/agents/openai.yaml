@@ -1,0 +1,4 @@
+interface:
+  display_name: "SAVAGE 年卡抢课"
+  short_description: "使用年卡 API 检查库存、预约课程、取消预约并退回权益"
+  default_prompt: "Use $savage-membership-booking to book or cancel a SAVAGE membership class."
