@@ -21,7 +21,7 @@ def test_get_profile(api_server):
         "membershipCardHolder": True,
         "sessionCardHolder": False,
     }
-    assert api_server["requests"][0][:2] == ("/user/profile/detail", {})
+    assert api_server["requests"][0][:2] == ("/user-base/get-user-base-info", {})
 
 
 def test_list_inventory_settle_and_place_flow(api_server):
