@@ -1,0 +1,18 @@
+{
+  "runtime_dir": "/absolute/private/runtime",
+  "master_env_file": "/absolute/private/master.env",
+  "slave_env_file": "/absolute/private/slave.env",
+  "master_account_id": "YOUR_MASTER_ACCOUNT_ID",
+  "slave_account_id": "YOUR_SLAVE_ACCOUNT_ID",
+  "start_utc": "2026-10-13T09:00:00Z",
+  "classes": [
+    {
+      "id": 12345678,
+      "classId": 172,
+      "name": "战绳风暴 Battle Rope",
+      "start": "2026-10-17 15:10:00",
+      "end": "2026-10-17 16:10:00",
+      "room": "北京某店团课教室"
+    }
+  ]
+}

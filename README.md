@@ -1,5 +1,9 @@
 # SAVAGE 微信小程序 OpenAPI
 
+## 本地扩展：固定预约执行器
+
+此版本新增配置驱动的开放前两分钟每30秒排课检查、会员零元预约、满员候补与一次性提交保护。使用方法、测试范围和限制见 [预约执行器文档](docs/booking-runner.md)，配置模板见 [runner-config.json](examples/runner-config.json)。Token 和运行记录保存在项目外。
+
 这是一个非官方项目，提供 SAVAGE 微信小程序的 OpenAPI 3.1 文档、Codex Skill 和安全 API 客户端。
 
 项目支持：
