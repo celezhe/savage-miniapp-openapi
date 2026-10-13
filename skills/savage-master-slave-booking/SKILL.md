@@ -14,7 +14,7 @@ Use the bundled scripts for deterministic execution. Read [runner.md](references
 - Master token is used only for the user's explicitly authorized classes. Check its account ID and membership status before submitting.
 - Confirm the exact date, time in Beijing, store, class and scheduleId, whether FULL inventory may use waitlisting, and the trigger rule. Existing explicit authorization remains valid for those exact choices.
 - Only membership deductions with both cashPay and payableAmount equal to zero may proceed. Never invoke wx.requestPayment. Nonzero or unknown amounts stop the attempt.
-- Credentials live in separate private env files outside the skill/repository, permissions 600, each with SAVAGE_TOKEN. Never display credentials or private order identifiers.
+- Credentials live in separate private env files outside the skill/repository, each with SAVAGE_TOKEN. On POSIX require permissions 600; on Windows restrict access using NTFS ACLs (mode bits do not enforce this). Never display credentials or private order identifiers.
 
 ## Configure or continue
 

@@ -23,7 +23,7 @@
 
 ## 准备
 
-需要 Python 3.10+、macOS/Linux 的 `fcntl` 和 `/usr/bin/curl`。TLS 验证保持开启。脚本不调用微信现金支付。
+需要 Python 3.10+ 和 curl。macOS/Linux 优先使用 `/usr/bin/curl`，缺失时从 PATH 查找；Windows 从 PATH 查找 `curl.exe`。文件锁分别使用 POSIX `fcntl` 和 Windows `msvcrt`。TLS 验证保持开启。脚本不调用微信现金支付。
 
 1. 在项目目录外准备两个私有 `.env` 文件，各包含一行 `SAVAGE_TOKEN=...`；权限必须为 `600`。
 2. 将示例配置复制到项目外，填写监控账号、预约账号、凭证路径、运行目录、UTC 开始时间和准确场次。配置不保存 token。
@@ -38,6 +38,15 @@ python3 scripts/watch_and_book.py
 ```
 
 第一条命令只载入配置，不发请求。第二条检查一次。第三条持续监控，并在所有场次开放时触发已授权的真实零元预约。必须先获得用户对配置中全部具体预约和满员候补的明确授权，再运行第三条命令。
+
+Windows PowerShell 启动示例：
+
+```powershell
+$env:SAVAGE_RUNNER_CONFIG = "C:\private\runner-config.json"
+python scripts/watch_and_book.py
+```
+
+Windows 凭证和运行记录必须使用 NTFS ACL 限制访问；POSIX 的 `chmod 600` 不适用于 Windows，脚本在 Windows 不用 mode bits 判断隐私权限。配置中的路径可写成 `C:/private/master.env`。Windows 适配已有模拟测试，但尚未在真实 Windows 环境验证完整流程。
 
 ## 固定分支
 

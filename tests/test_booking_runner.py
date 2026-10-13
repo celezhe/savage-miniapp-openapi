@@ -44,6 +44,26 @@ class RunnerTests(unittest.TestCase):
         body, queue = self.runner.payload(self.settlement(), 12345678, 'NORMAL')
         self.assertFalse(queue); self.assertEqual(body['waitDeadlineOption'], '')
 
+    def test_windows_curl_discovery(self):
+        import runtime_platform as platform
+        with patch.object(platform.sys, 'platform', 'win32'), patch.object(platform.shutil, 'which', return_value='C:/Windows/System32/curl.exe') as which:
+            self.assertEqual(platform.curl_executable(), 'C:/Windows/System32/curl.exe')
+            which.assert_called_once_with('curl.exe')
+
+    def test_missing_curl_stops(self):
+        import runtime_platform as platform
+        with patch.object(platform.sys, 'platform', 'win32'), patch.object(platform.shutil, 'which', return_value=None):
+            with self.assertRaises(RuntimeError): platform.curl_executable()
+
+    def test_windows_lock_uses_byte_zero(self):
+        import runtime_platform as platform
+        msvcrt = SimpleNamespace(LK_NBLCK=99, locking=lambda *a: captured.append(a))
+        captured = []
+        with tempfile.TemporaryFile(mode='w+') as file, patch.object(platform.os, 'name', 'nt'), patch.dict(sys.modules, {'msvcrt': msvcrt}):
+            platform.fcntl.flock(file, 3)
+            self.assertEqual(captured[0], (file.fileno(), 99, 1))
+            self.assertEqual(file.tell(), 0)
+
     def test_queue_default(self):
         s = self.settlement()
         s['item']['waitQueueInfo'] = {'isQueue': 1, 'deadlineOptions': [
