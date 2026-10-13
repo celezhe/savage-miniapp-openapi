@@ -16,6 +16,12 @@ def main():
         results = []
         for course in CLASSES:
             try:
+                detail = api.post('/groupClass/schedule/detail', {'scheduleId': course['id']})
+                if (str(detail.get('scheduleId')) != str(course['id']) or
+                    detail.get('displayStatus') == 'PREVIEW' or detail.get('canBook') is not True):
+                    results.append({'scheduleId': course['id'], 'open': False,
+                                    'result': '排课尚未开放', 'displayStatus': detail.get('displayStatus')})
+                    continue
                 settlement = api.post('/order/settle/groupClass', {
                     'firstSettle': True, 'quantity': 1, 'scheduleId': course['id']})
                 item = settlement.get('item', {})

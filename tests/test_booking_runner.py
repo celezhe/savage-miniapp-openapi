@@ -83,7 +83,7 @@ class RunnerTests(unittest.TestCase):
                        SimpleNamespace(stdout=json.dumps({'all_open': True}), returncode=0),
                        SimpleNamespace(stdout='fixture completed', returncode=0)]
             with patch.object(w, 'ROOT', root), patch.object(w, 'STATUS', root / 'status.json'), \
-                 patch.object(w, 'START', dt.datetime.now(dt.timezone.utc) + dt.timedelta(hours=1)), \
+                 patch.object(w, 'START', dt.datetime.now(dt.timezone.utc) + dt.timedelta(minutes=1)), \
                  patch.object(w.subprocess, 'run', side_effect=outputs) as run, patch.object(w.time, 'sleep'):
                 w.main()
                 self.assertEqual(run.call_count, 3)

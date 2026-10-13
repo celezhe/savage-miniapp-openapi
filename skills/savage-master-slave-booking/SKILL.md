@@ -31,7 +31,7 @@ python3 scripts/check_booking_open.py
 python3 scripts/watch_and_book.py
 ```
 
-The first command is offline. The second checks once. The third launches real monitoring and can trigger real authorized zero-cash reservations. Obtain authorization before the third command; the skill itself grants none. Polling defaults to 60 seconds when the user requests per-minute monitoring.
+The first command is offline. The second checks once. The third launches real monitoring and can trigger real authorized zero-cash reservations. Obtain authorization before the third command; the skill itself grants none. Polling starts two minutes before start_utc and runs every 30 seconds. The slave calls schedule/detail with each scheduleId; PREVIEW remains closed. Once the detail allows booking, settlement verifies availability.
 
 ## Submission invariants
 
@@ -47,6 +47,6 @@ The first command is offline. The second checks once. The third launches real mo
 
 Read runtime_dir/work/watch-and-book-status.json for progress. Notify only on opening, completion, failure or required user action; stay quiet when unchanged. Stop on identity failure, 401, 411 or 429. A 412 during slave monitoring means not yet available. Network failure does not mean token expiry.
 
-The watcher stops at start_utc plus 10 minutes and exits after one master invocation, even if it fails. It does not auto-restart. Direct timed execution is limited to the first 60 seconds after start_utc; event mode follows actual opening, including early opening. Explain these semantics when the user requires exact timing. Never promise exact-second scheduling or successful allocation.
+The watcher waits without API calls until start_utc minus two minutes, then stops at start_utc plus 10 minutes and exits after one master invocation, even if it fails. It does not auto-restart. Direct timed execution is limited to the first 60 seconds after start_utc; event mode follows actual opening, including early opening. Explain these semantics when the user requires exact timing. Never promise exact-second scheduling or successful allocation.
 
 Tests with nonmember accounts can check settlement or create separately authorized unpaid orders, but must not bypass the production runner's zero-cash guards. Real membership zero-cash booking and final waitlist activation have not yet been verified end to end.
