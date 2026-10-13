@@ -13,7 +13,7 @@ import time
 CONFIG_PATH = Path(os.environ.get('SAVAGE_RUNNER_CONFIG', '')).expanduser()
 if not CONFIG_PATH.is_file():
     raise SystemExit('Set SAVAGE_RUNNER_CONFIG to a private configuration file')
-CONFIG = json.loads(CONFIG_PATH.read_text(encoding='utf-8'))
+CONFIG = json.loads(CONFIG_PATH.read_text(encoding='utf-8-sig'))
 ROOT = Path(CONFIG['runtime_dir']).expanduser()
 ENV = Path(os.environ.get('SAVAGE_MASTER_ENV_FILE', CONFIG['master_env_file'])).expanduser()
 STATE = ROOT / 'work/booking-state.json'
@@ -81,7 +81,7 @@ class API:
     def __init__(self, env=ENV):
         if os.name != 'nt' and env.stat().st_mode & 0o077:
             raise Stop('凭证权限必须为 600')
-        self.token = next(line.split('=', 1)[1].strip().strip('\"\'') for line in env.read_text(encoding='utf-8').splitlines() if line.startswith('SAVAGE_TOKEN='))
+        self.token = next(line.split('=', 1)[1].strip().strip('\"\'') for line in env.read_text(encoding='utf-8-sig').splitlines() if line.startswith('SAVAGE_TOKEN='))
 
     def post(self, path, body):
         # Credentials enter curl via stdin only; TLS verification stays enabled.
@@ -110,7 +110,8 @@ class API:
 def save(state):
     tmp = STATE.with_suffix('.new')
     with open(tmp, 'w', encoding='utf-8') as f:
-        os.chmod(tmp, 0o600)
+        if os.name != 'nt':
+            os.chmod(tmp, 0o600)
         json.dump(state, f, ensure_ascii=False)
         f.flush()
         os.fsync(f.fileno())

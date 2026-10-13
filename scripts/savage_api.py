@@ -157,7 +157,7 @@ class SavageClient:
 
 def read_token(path: Path) -> str:
     mode = stat.S_IMODE(path.stat().st_mode)
-    if mode & 0o077:
+    if os.name != 'nt' and mode & 0o077:
         raise ApiError(f"Token file permissions must be 600 or stricter, found {mode:o}")
     return path.read_text(encoding="utf-8").strip()
 
@@ -185,7 +185,7 @@ def main(argv: list[str] | None = None) -> int:
         token_path = Path(os.environ["SAVAGE_TOKEN_FILE"])
         api = SavageClient(read_token(token_path), base_url=args.base_url)
         if args.command == "classes":
-            result = api.list_classes(json.loads(args.query_file.read_text()))
+            result = api.list_classes(json.loads(args.query_file.read_text(encoding="utf-8-sig")))
         elif args.command == "profile":
             result = api.profile()
         elif args.command == "display-profile":

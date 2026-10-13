@@ -16,7 +16,8 @@ def record(value):
     value['updated_utc'] = dt.datetime.now(dt.timezone.utc).isoformat()
     tmp = STATUS.with_suffix('.new')
     with open(tmp, 'w', encoding='utf-8') as f:
-        os.chmod(tmp, 0o600)
+        if os.name != 'nt':
+            os.chmod(tmp, 0o600)
         json.dump(value, f, ensure_ascii=False)
     os.replace(tmp, STATUS)
 

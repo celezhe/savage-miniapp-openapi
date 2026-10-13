@@ -1,6 +1,6 @@
 # 配置驱动的预约监控
 
-此目录是 `celezhe/savage-miniapp-openapi` 的本地扩展，沿用原有 OpenAPI、客户端和 Skill，新增固定 Python 执行流程。没有修改线上仓库。
+此目录是 `celezhe/savage-miniapp-openapi` 的本地扩展，沿用原有 OpenAPI、客户端和 Skill，新增固定 Python 执行流程。改动通过 GitHub PR 提交。
 
 ## Master / Slave
 
@@ -25,7 +25,7 @@
 
 需要 Python 3.10+ 和 curl。macOS/Linux 优先使用 `/usr/bin/curl`，缺失时从 PATH 查找；Windows 从 PATH 查找 `curl.exe`。文件锁分别使用 POSIX `fcntl` 和 Windows `msvcrt`。TLS 验证保持开启。脚本不调用微信现金支付。
 
-1. 在项目目录外准备两个私有 `.env` 文件，各包含一行 `SAVAGE_TOKEN=...`；权限必须为 `600`。
+1. 在项目目录外准备两个私有 `.env` 文件，各包含一行 `SAVAGE_TOKEN=...`；POSIX 权限为 `600`，Windows 使用私有 NTFS ACL。
 2. 将示例配置复制到项目外，填写监控账号、预约账号、凭证路径、运行目录、UTC 开始时间和准确场次。配置不保存 token。
 3. 预约账号必须具有会员卡权益。只有结算明确返回会员抵扣，且 `cashPay`、`payableAmount` 都为零，才允许下单。
 4. 运行目录必须是新的、私有目录。不要删除已使用运行目录中的提交记录后重试。
@@ -61,7 +61,7 @@ Windows 凭证和运行记录必须使用 NTFS ACL 限制访问；POSIX 的 `chm
 
 ## 一次性执行与截止
 
-进程锁避免并发监控。预约执行器使用 `O_EXCL` 创建整次运行标记；首次执行失败后也不能自动重新运行。每场下单意图、订单标识保存在私有运行目录中，文件权限为 `600`，不会输出到终端。
+进程锁避免并发监控。预约执行器使用 `O_EXCL` 创建整次运行标记；首次执行失败后也不能自动重新运行。每场下单意图、订单标识保存在私有运行目录中，POSIX 文件权限为 `600`（Windows 使用运行目录继承的私有 ACL），不会输出到终端。
 
 事件模式可在配置中的预期开始时间之前触发，以服务器实际开放状态为准；监控最晚运行到预期开始时间之后 10 分钟。直接执行 `booking_runner.py --execute` 只允许在预期开始时间后的 60 秒内运行。
 

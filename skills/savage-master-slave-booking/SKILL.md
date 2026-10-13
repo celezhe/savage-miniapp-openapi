@@ -45,6 +45,8 @@ python3 scripts/check_booking_open.py
 python3 scripts/watch_and_book.py
 ```
 
+On Windows PowerShell, use `$env:SAVAGE_RUNNER_CONFIG = "C:/private/runner-config.json"` and `python` instead of the POSIX `export` / `python3` commands. Use UTF-8 JSON/env files; UTF-8 BOM is accepted.
+
 The first command is offline. The second checks once. The third launches real monitoring and can trigger real authorized zero-cash reservations. Obtain authorization before the third command; the skill itself grants none. Polling starts two minutes before start_utc and runs every 30 seconds. The slave calls schedule/detail with each scheduleId; PREVIEW remains closed. Once the detail allows booking, settlement verifies availability.
 
 ## Submission invariants
