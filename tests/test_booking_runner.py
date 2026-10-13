@@ -17,9 +17,9 @@ class RunnerTests(unittest.TestCase):
     def setUpClass(cls):
         cls.temp = tempfile.TemporaryDirectory()
         root = Path(cls.temp.name)
-        cfg = json.loads((PROJECT / 'examples/runner-config.json').read_text())
+        cfg = json.loads((PROJECT / 'examples/runner-config.json').read_text(encoding='utf-8'))
         cfg['runtime_dir'] = str(root)
-        p = root / 'config.json'; p.write_text(json.dumps(cfg))
+        p = root / 'config.json'; p.write_text(json.dumps(cfg), encoding='utf-8')
         cls.previous = os.environ.get('SAVAGE_RUNNER_CONFIG')
         os.environ['SAVAGE_RUNNER_CONFIG'] = str(p)
         sys.path.insert(0, str(PROJECT / 'scripts'))
@@ -108,7 +108,7 @@ class RunnerTests(unittest.TestCase):
                 w.main()
                 self.assertEqual(run.call_count, 3)
                 self.assertEqual(sum('--execute' in c.args[0] for c in run.call_args_list), 1)
-                self.assertEqual(json.loads((root / 'status.json').read_text())['phase'], 'finished')
+                self.assertEqual(json.loads((root / 'status.json').read_text(encoding='utf-8'))['phase'], 'finished')
 
 if __name__ == '__main__':
     unittest.main()
