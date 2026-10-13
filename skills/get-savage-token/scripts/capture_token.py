@@ -24,9 +24,11 @@ class CaptureSavageToken:
         if not destination:
             ctx.log.error("SAVAGE_ENV_FILE is required")
             return
+        if not token:
+            return
+        expiration = parse_expiration(expire_time) if expire_time is not None else None
         update_env(Path(destination).expanduser().resolve(), token)
         if expire_time is not None:
-            expiration = parse_expiration(expire_time)
             remaining = int((expiration - datetime.now(timezone.utc)).total_seconds())
             ctx.log.info(f"SAVAGE token saved; expires UTC {expiration.isoformat()}")
             ctx.log.info(f"Remaining TTL seconds: {remaining}")

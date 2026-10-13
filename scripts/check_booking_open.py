@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """Read-only booking availability check using hrz; no placement or payment."""
 import datetime as dt
-import fcntl
+from runtime_platform import fcntl
 import json
 import os
 from pathlib import Path
 from booking_runner import API, ROOT, CLASSES, Stop, CONFIG
 
 def main():
-    with open(ROOT / 'work/check-booking-open.lock', 'w') as lock:
+    ROOT.joinpath('work').mkdir(parents=True, exist_ok=True)
+    with open(ROOT / 'work/check-booking-open.lock', 'a+') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         api = API(Path(os.environ.get('SAVAGE_SLAVE_ENV_FILE', CONFIG['slave_env_file'])).expanduser())
         if str(api.post('/user/profile/detail', {}).get('userId')) != str(CONFIG['slave_account_id']):

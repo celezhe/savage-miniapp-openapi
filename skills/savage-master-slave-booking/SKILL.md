@@ -5,6 +5,8 @@ description: Monitor SAVAGE class availability with a slave account and perform 
 
 # SAVAGE Master / Slave Booking
 
+Before platform-specific setup, read [platform-support.md](references/platform-support.md). Python helpers support Windows, macOS and Linux; official client and proxy prerequisites must be checked separately.
+
 Use the bundled scripts for deterministic execution. Read [runner.md](references/runner.md) for configuration, endpoint sequence and limitations. The config template is [runner-config.json](assets/runner-config.json).
 
 ## Accounts and authorization
@@ -14,7 +16,7 @@ Use the bundled scripts for deterministic execution. Read [runner.md](references
 - Master token is used only for the user's explicitly authorized classes. Check its account ID and membership status before submitting.
 - Confirm the exact date, time in Beijing, store, class and scheduleId, whether FULL inventory may use waitlisting, and the trigger rule. Existing explicit authorization remains valid for those exact choices.
 - Only membership deductions with both cashPay and payableAmount equal to zero may proceed. Never invoke wx.requestPayment. Nonzero or unknown amounts stop the attempt.
-- Credentials live in separate private env files outside the skill/repository, permissions 600, each with SAVAGE_TOKEN. Never display credentials or private order identifiers.
+- Credentials live in separate private env files outside the skill/repository, each with SAVAGE_TOKEN. On POSIX require permissions 600; on Windows restrict access using NTFS ACLs (mode bits do not enforce this). Never display credentials or private order identifiers.
 
 ## Configure or continue
 
@@ -44,6 +46,8 @@ python3 scripts/booking_runner.py
 python3 scripts/check_booking_open.py
 python3 scripts/watch_and_book.py
 ```
+
+On Windows PowerShell, use `$env:SAVAGE_RUNNER_CONFIG = "C:/private/runner-config.json"` and `python` instead of the POSIX `export` / `python3` commands. Use UTF-8 JSON/env files; UTF-8 BOM is accepted.
 
 The first command is offline. The second checks once. The third launches real monitoring and can trigger real authorized zero-cash reservations. Obtain authorization before the third command; the skill itself grants none. Polling starts two minutes before start_utc and runs every 30 seconds. The slave calls schedule/detail with each scheduleId; PREVIEW remains closed. Once the detail allows booking, settlement verifies availability.
 

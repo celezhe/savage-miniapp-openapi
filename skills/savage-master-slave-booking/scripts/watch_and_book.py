@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Poll hrz every 30 seconds during the two-minute pre-release window; trigger exactly one yuer booking run when both open."""
 import datetime as dt
-import fcntl
+from runtime_platform import fcntl
 import json
 import os
 from pathlib import Path
@@ -15,14 +15,15 @@ STATUS = ROOT / 'work/watch-and-book-status.json'
 def record(value):
     value['updated_utc'] = dt.datetime.now(dt.timezone.utc).isoformat()
     tmp = STATUS.with_suffix('.new')
-    with open(tmp, 'w') as f:
-        os.chmod(tmp, 0o600)
+    with open(tmp, 'w', encoding='utf-8') as f:
+        if os.name != 'nt':
+            os.chmod(tmp, 0o600)
         json.dump(value, f, ensure_ascii=False)
     os.replace(tmp, STATUS)
 
 def main():
     ROOT.joinpath('work').mkdir(parents=True, exist_ok=True)
-    with open(ROOT / 'work/watch-and-book.lock', 'w') as lock:
+    with open(ROOT / 'work/watch-and-book.lock', 'a+') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         if (ROOT / 'work/booking-run-once.json').exists():
             record({'phase': 'stopped', 'reason': '鱼儿预约脚本已运行过，禁止重跑'})
@@ -37,7 +38,8 @@ def main():
             tick = time.monotonic()
             try:
                 check = subprocess.run([sys.executable, str(Path(__file__).with_name('check_booking_open.py'))],
-                                       capture_output=True, text=True, timeout=60)
+                                       capture_output=True, text=True, encoding='utf-8',
+                                       env={**os.environ, 'PYTHONIOENCODING': 'utf-8'}, timeout=60)
                 report = json.loads(check.stdout)
             except (subprocess.TimeoutExpired, ValueError):
                 record({'phase': 'monitoring', 'reason': '网络或检查输出异常，等待下一轮'})
@@ -51,7 +53,8 @@ def main():
                 # No retries, even after timeout or a failed booking run.
                 try:
                     result = subprocess.run([sys.executable, str(Path(__file__).with_name('booking_runner.py')),
-                                             '--execute', '--when-open'], capture_output=True, text=True, timeout=240)
+                                             '--execute', '--when-open'], capture_output=True, text=True,
+                                            encoding='utf-8', env={**os.environ, 'PYTHONIOENCODING': 'utf-8'}, timeout=240)
                     record({'phase': 'finished', 'exit_code': result.returncode, 'result': result.stdout.strip()})
                 except subprocess.TimeoutExpired:
                     record({'phase': 'stopped', 'reason': '预约脚本超时，禁止重跑，需核对订单'})

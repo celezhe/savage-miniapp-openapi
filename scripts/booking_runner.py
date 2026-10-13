@@ -3,7 +3,7 @@
 import argparse
 import datetime as dt
 from decimal import Decimal
-import fcntl
+from runtime_platform import fcntl, curl_executable
 import json
 import os
 from pathlib import Path
@@ -13,7 +13,7 @@ import time
 CONFIG_PATH = Path(os.environ.get('SAVAGE_RUNNER_CONFIG', '')).expanduser()
 if not CONFIG_PATH.is_file():
     raise SystemExit('Set SAVAGE_RUNNER_CONFIG to a private configuration file')
-CONFIG = json.loads(CONFIG_PATH.read_text())
+CONFIG = json.loads(CONFIG_PATH.read_text(encoding='utf-8-sig'))
 ROOT = Path(CONFIG['runtime_dir']).expanduser()
 ENV = Path(os.environ.get('SAVAGE_MASTER_ENV_FILE', CONFIG['master_env_file'])).expanduser()
 STATE = ROOT / 'work/booking-state.json'
@@ -78,22 +78,23 @@ def payload(settlement, sid, inventory):
     }, is_queue
 
 class API:
-    def __init__(self, env=ENV):
-        if env.stat().st_mode & 0o077:
+    def __init__(self, env=ENV, *, base_url='https://wechat-api.savagepark.com.cn/backend-api'):
+        self.base_url = base_url.rstrip('/')
+        if os.name != 'nt' and env.stat().st_mode & 0o077:
             raise Stop('凭证权限必须为 600')
-        self.token = next(line.split('=', 1)[1].strip().strip('\"\'') for line in env.read_text().splitlines() if line.startswith('SAVAGE_TOKEN='))
+        self.token = next(line.split('=', 1)[1].strip().strip('\"\'') for line in env.read_text(encoding='utf-8-sig').splitlines() if line.startswith('SAVAGE_TOKEN='))
 
     def post(self, path, body):
         # Credentials enter curl via stdin only; TLS verification stays enabled.
         config = '\n'.join([
-            'url = ' + json.dumps('https://wechat-api.savagepark.com.cn/backend-api' + path),
+            'url = ' + json.dumps(self.base_url + path),
             'request = "POST"', 'header = "Content-Type: application/json"',
             'header = ' + json.dumps('Authorization: Bearer ' + self.token),
             'data = ' + json.dumps(json.dumps(body)), ''])
         try:
-            r = subprocess.run(['/usr/bin/curl', '--config', '-', '--silent', '--noproxy', '*',
+            r = subprocess.run([curl_executable(), '--config', '-', '--silent', '--noproxy', '*',
                                 '--max-time', '15', '--write-out', '\n%{http_code}'],
-                               input=config, text=True, capture_output=True, timeout=20)
+                               input=config, text=True, encoding='utf-8', capture_output=True, timeout=20)
             if r.returncode:
                 raise Stop('网络错误，未自动重试请求')
             raw, http = r.stdout.rsplit('\n', 1)
@@ -109,8 +110,9 @@ class API:
 
 def save(state):
     tmp = STATE.with_suffix('.new')
-    with open(tmp, 'w') as f:
-        os.chmod(tmp, 0o600)
+    with open(tmp, 'w', encoding='utf-8') as f:
+        if os.name != 'nt':
+            os.chmod(tmp, 0o600)
         json.dump(state, f, ensure_ascii=False)
         f.flush()
         os.fsync(f.fileno())
@@ -214,7 +216,7 @@ def main():
     elif not START <= now <= START + dt.timedelta(seconds=60):
         raise Stop('不在授权执行窗口，未发请求')
     ROOT.joinpath('work').mkdir(parents=True, exist_ok=True)
-    with open(ROOT / 'work/booking.lock', 'w') as lock:
+    with open(ROOT / 'work/booking.lock', 'a+') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         # Exclusive durable creation permits only one execution, including failed runs.
         run_marker = ROOT / 'work/booking-run-once.json'
@@ -222,7 +224,7 @@ def main():
             fd = os.open(run_marker, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         except FileExistsError:
             raise Stop('鱼儿定时任务已运行过，禁止再次执行') from None
-        with os.fdopen(fd, 'w') as marker:
+        with os.fdopen(fd, 'w', encoding='utf-8') as marker:
             json.dump({'started_utc': now.isoformat()}, marker)
             marker.flush()
             os.fsync(marker.fileno())
@@ -231,7 +233,7 @@ def main():
             raise Stop('账号不匹配')
         if api.post('/user-base/get-user-base-info', {}).get('membershipCardHolder') is not True:
             raise Stop('账号会员身份未确认')
-        state = json.loads(STATE.read_text()) if STATE.exists() else {}
+        state = json.loads(STATE.read_text(encoding='utf-8')) if STATE.exists() else {}
         for course in CLASSES:
             try:
                 result = book(api, course, state)
