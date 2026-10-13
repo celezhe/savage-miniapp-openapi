@@ -23,7 +23,7 @@ def parse_expiration(value: object) -> datetime:
 
 def update_env(path: Path, token: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    lines = path.read_text().splitlines() if path.exists() else []
+    lines = path.read_text(encoding="utf-8-sig").splitlines() if path.exists() else []
     replacement = f"SAVAGE_TOKEN={token}"
     output: list[str] = []
     replaced = False
@@ -39,11 +39,13 @@ def update_env(path: Path, token: str) -> None:
 
     fd, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     try:
-        os.fchmod(fd, 0o600)
-        with os.fdopen(fd, "w") as stream:
+        if os.name != "nt":
+            os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
             stream.write("\n".join(output) + "\n")
         os.replace(temporary, path)
-        os.chmod(path, 0o600)
+        if os.name != "nt":
+            os.chmod(path, 0o600)
     except BaseException:
         try:
             os.unlink(temporary)
@@ -69,7 +71,9 @@ def main() -> int:
 
     update_env(args.env_file.expanduser().resolve(), token.strip())
     remaining = int((expiration - datetime.now(timezone.utc)).total_seconds())
-    print(f"Saved securely. Expires UTC: {expiration.isoformat()}")
+    print(f"Saved. Expires UTC: {expiration.isoformat()}")
+    if os.name == "nt":
+        print("Protect the credential directory with a private NTFS ACL.")
     print(f"Remaining TTL seconds: {remaining}")
     return 0
 
