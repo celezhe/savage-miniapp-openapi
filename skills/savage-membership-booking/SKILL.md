@@ -5,6 +5,8 @@ description: Book or cancel a SAVAGE group class for a membership-card account. 
 
 # SAVAGE Membership Booking
 
+Before platform-specific setup, read [platform-support.md](references/platform-support.md). Python helpers support Windows, macOS and Linux; official client and proxy prerequisites must be checked separately.
+
 Use only the user's account. Read `SAVAGE_TOKEN` from a private `.env` file with mode `600`. Never show the token, headers, order IDs, or private responses.
 
 Use the endpoints and schemas in the `savage-miniapp-openapi` repository.

@@ -5,6 +5,8 @@ description: Monitor SAVAGE class availability with a slave account and perform 
 
 # SAVAGE Master / Slave Booking
 
+Before platform-specific setup, read [platform-support.md](references/platform-support.md). Python helpers support Windows, macOS and Linux; official client and proxy prerequisites must be checked separately.
+
 Use the bundled scripts for deterministic execution. Read [runner.md](references/runner.md) for configuration, endpoint sequence and limitations. The config template is [runner-config.json](assets/runner-config.json).
 
 ## Accounts and authorization

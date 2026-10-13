@@ -78,7 +78,8 @@ def payload(settlement, sid, inventory):
     }, is_queue
 
 class API:
-    def __init__(self, env=ENV):
+    def __init__(self, env=ENV, *, base_url='https://wechat-api.savagepark.com.cn/backend-api'):
+        self.base_url = base_url.rstrip('/')
         if os.name != 'nt' and env.stat().st_mode & 0o077:
             raise Stop('凭证权限必须为 600')
         self.token = next(line.split('=', 1)[1].strip().strip('\"\'') for line in env.read_text(encoding='utf-8-sig').splitlines() if line.startswith('SAVAGE_TOKEN='))
@@ -86,7 +87,7 @@ class API:
     def post(self, path, body):
         # Credentials enter curl via stdin only; TLS verification stays enabled.
         config = '\n'.join([
-            'url = ' + json.dumps('https://wechat-api.savagepark.com.cn/backend-api' + path),
+            'url = ' + json.dumps(self.base_url + path),
             'request = "POST"', 'header = "Content-Type: application/json"',
             'header = ' + json.dumps('Authorization: Bearer ' + self.token),
             'data = ' + json.dumps(json.dumps(body)), ''])

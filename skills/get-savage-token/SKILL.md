@@ -5,6 +5,8 @@ description: Safely capture, store, validate, and rotate a SAVAGE WeChat Mini Pr
 
 # Get a SAVAGE Token
 
+Before platform-specific setup, read [platform-support.md](references/platform-support.md). Python helpers support Windows, macOS and Linux; official client and proxy prerequisites must be checked separately.
+
 Use only an account that the user owns or controls. Treat the login response, bearer token, account data, and interception logs as secrets.
 
 ## Default workflow: Proxyman

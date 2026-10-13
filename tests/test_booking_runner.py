@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+import pytest
 from unittest.mock import patch
 from types import SimpleNamespace
 
@@ -112,3 +113,18 @@ class RunnerTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+def test_actual_curl_transport_with_local_fixture(api_server, tmp_path):
+    # Real curl executable, local HTTP server, synthetic credentials. No SAVAGE requests.
+    import booking_runner
+    path = tmp_path / 'token.env'
+    path.write_text('SAVAGE_TOKEN=synthetic-test-token\n', encoding='utf-8')
+    if os.name != 'nt': path.chmod(0o600)
+    api = booking_runner.API(path, base_url=api_server['url'])
+    api_server['responses']['/fixture'] = {'code': 200, 'data': {'name': '中文', 'ok': True}}
+    assert api.post('/fixture', {'name': '中文'}) == {'name': '中文', 'ok': True}
+    assert api_server['requests'][0][2] == 'Bearer synthetic-test-token'
+    api_server['responses']['/fixture'] = {'code': 401, 'msg': 'synthetic-test-token', 'data': None}
+    with pytest.raises(booking_runner.Stop) as exc:
+        api.post('/fixture', {})
+    assert '401' in str(exc.value) and 'synthetic-test-token' not in str(exc.value)
