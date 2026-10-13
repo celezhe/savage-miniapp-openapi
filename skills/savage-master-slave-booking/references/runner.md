@@ -17,6 +17,10 @@
 - `scripts/booking_runner.py`：用预约账号按配置顺序处理普通预约或满员候补，仅允许会员抵扣、现金应付零元。
 - `examples/runner-config.json`：配置结构示例，使用占位账号和场次。
 
+## 用户选课流程
+
+调用 `$savage-master-slave-booking` 后，用户提供课程截图或课程名、门店、日期和时间。Codex 用 Slave 查询排课列表、匹配唯一场次并确认详情，自动取得 scheduleId/classId，再展示选课结果并生成私有配置。用户无需找 ID 或填写 JSON。已有明确选课和授权时不重复询问；Master 只在最终预约执行时使用。
+
 ## 准备
 
 需要 Python 3.10+、macOS/Linux 的 `fcntl` 和 `/usr/bin/curl`。TLS 验证保持开启。脚本不调用微信现金支付。
