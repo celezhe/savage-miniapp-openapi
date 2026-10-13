@@ -9,6 +9,8 @@ Use this skill only for an account that the user owns or controls. Treat every t
 
 ## Choose a workflow
 
+- For an explicitly authorized monitored membership booking, use `docs/booking-runner.md`. Confirm the exact configured classes, accounts, zero-cash requirement and queue policy before starting `scripts/watch_and_book.py`. Its per-minute interval requires explicit user authorization. Do not remove once markers or automatically retry a placement.
+
 - For a missing or expired token, use **Get a token**.
 - For schedules only, stop after **List classes**.
 - For account information, run `python3 scripts/savage_api.py profile` and stop.
